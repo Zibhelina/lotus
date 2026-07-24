@@ -14,9 +14,14 @@ function renderApplet(code: string, submitText?: (text: string) => void) {
   )
 }
 
-function sendAppletMessage(iframe: HTMLIFrameElement, data: unknown, source: MessageEventSource | null = iframe.contentWindow) {
+function sendAppletMessage(
+  iframe: HTMLIFrameElement,
+  data: unknown,
+  source: MessageEventSource | null = iframe.contentWindow,
+  origin = ''
+) {
   act(() => {
-    window.dispatchEvent(new MessageEvent('message', { data, source }))
+    window.dispatchEvent(new MessageEvent('message', { data, origin, source }))
   })
 }
 
@@ -74,6 +79,48 @@ describe('AppletRenderer', () => {
     expect(submitText).toHaveBeenCalledWith('accepted')
     expect(postMessage).toHaveBeenCalledTimes(1)
     expect(postMessage).toHaveBeenCalledWith({ lotus: 1, ok: true, type: 'ack' }, '*')
+  })
+
+  it('resizes height-based applets from trusted bridge messages and clamps extreme heights', () => {
+    renderApplet(JSON.stringify({ height: 480, html: '<!doctype html><main>Applet</main>' }))
+    const iframe = screen.getByTitle('Lotus applet') as HTMLIFrameElement
+
+    sendAppletMessage(iframe, { height: 736.2, lotus: 1, type: 'resize' }, window)
+    expect(iframe.style.height).toBe('480px')
+
+    sendAppletMessage(iframe, { height: 736.2, lotus: 1, type: 'resize' })
+    expect(iframe.style.height).toBe('737px')
+
+    sendAppletMessage(iframe, { height: 99_999, lotus: 1, type: 'resize' })
+    expect(iframe.style.height).toBe('8192px')
+  })
+
+  it('rejects messages after a URL applet navigates away from its declared origin', () => {
+    const submitText = vi.fn()
+    renderApplet(JSON.stringify({ url: 'http://127.0.0.1:2600/applets/test' }), submitText)
+    const iframe = screen.getByTitle('Lotus applet') as HTMLIFrameElement
+
+    act(() => vi.advanceTimersByTime(500))
+    sendAppletMessage(iframe, { lotus: 1, text: 'remote page', type: 'submit' }, iframe.contentWindow, 'https://example.com')
+    sendAppletMessage(
+      iframe,
+      { lotus: 1, text: 'local applet', type: 'submit' },
+      iframe.contentWindow,
+      'http://127.0.0.1:2600'
+    )
+
+    expect(submitText).toHaveBeenCalledTimes(1)
+    expect(submitText).toHaveBeenCalledWith('local applet')
+  })
+
+  it('keeps explicit aspect-ratio applets fixed when they send resize messages', () => {
+    renderApplet(JSON.stringify({ aspectRatio: 16 / 9, html: '<!doctype html><main>Applet</main>' }))
+    const iframe = screen.getByTitle('Lotus applet') as HTMLIFrameElement
+
+    sendAppletMessage(iframe, { height: 700, lotus: 1, type: 'resize' })
+
+    expect(Number.parseFloat(iframe.style.aspectRatio)).toBeCloseTo(16 / 9)
+    expect(iframe.style.height).toBe('')
   })
 
   it('ignores submits received before the mount guard elapses', () => {

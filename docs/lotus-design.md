@@ -24,7 +24,15 @@ Branch model: `lotus-main` carries fork commits on top of upstream `main`. Remot
    ```
    ~~~
 
-2. The applet runs in a sandboxed iframe. When the user finishes an interaction, the applet can send its result back **into the same chat session as a real user turn** via `postMessage`:
+2. The applet runs in a sandboxed iframe. It may report its document height so Lotus grows the frame instead of showing a nested scrollbar:
+
+   ```js
+   window.parent.postMessage({lotus: 1, type: "resize", height: document.documentElement.scrollHeight}, "*")
+   ```
+
+   The host accepts trusted finite heights from 160 through 8192 px. The fence's `height` remains the initial/fallback size. Explicit `aspectRatio` applets stay fixed.
+
+3. When the user finishes an interaction, the applet can send its result back **into the same chat session as a real user turn** via `postMessage`:
 
    ```js
    window.parent.postMessage({
@@ -34,13 +42,13 @@ Branch model: `lotus-main` carries fork commits on top of upstream `main`. Remot
    }, "*")
    ```
 
-3. The host validates the envelope and routes `text` through the SAME submit path the composer uses (optimistic UI, queueing, steering when the agent is streaming — all preserved). If a turn is already streaming, the text enters the normal steering/queue flow, exactly as if typed.
+4. The host validates the envelope and routes `text` through the SAME submit path the composer uses (optimistic UI, queueing, steering when the agent is streaming — all preserved). If a turn is already streaming, the text enters the normal steering/queue flow, exactly as if typed.
 
 ### Design constraints (from the app's engineering guide)
 
 - **Edge, not waist.** The renderer is a lazy chunk in the existing `RichCodeBlock` fence registry (`registry.tsx`), exactly like `mermaid`/`svg`. No new global store, no new core surface.
 - **Renderer owns presentation; backend owns sessions.** The bridge does NOT call gateway RPC directly. It hands text to the already-wired composer submit callback (`usePromptActions`), which owns session targeting, resume, queue, and optimistic paint.
-- **Security:** iframe `sandbox="allow-scripts allow-forms"` (NO `allow-same-origin` for inline HTML; url mode may include it only for http(s) localhost URLs). Bridge accepts only messages whose `event.source` is that iframe's `contentWindow`, with `lotus: 1`, a known `type`, and `text` length-capped (16 KB). One submit per applet per 2s (debounce); ignore everything else.
+- **Security:** iframe `sandbox="allow-scripts allow-forms"` (NO `allow-same-origin` for inline HTML; URL mode may include it only for HTTP localhost URLs). Bridge accepts only messages whose `event.source` is that iframe's `contentWindow`, with `lotus: 1` and a known `type`. URL applets must also match the exact origin declared in the fence, so a redirect or in-frame navigation to a remote site loses bridge access. Submit text is capped at 16 KB; resize heights are finite and clamped to 160–8192 px. One submit per applet per 2s (debounce); ignore everything else.
 - **No auto-fire:** a `submit` requires a user gesture inside the applet (the applet's own button); the host additionally ignores submits arriving <500ms after mount.
 - **Streaming-safe:** fence content arrives progressively; render the applet only when the fence is complete (the registry's `streaming` prop is false), showing the plain code block meanwhile — same behavior as mermaid.
 - **Fallback:** invalid JSON, missing url/html, or oversized html (256 KB cap) → render the normal syntax-highlighted block (the `fallback` prop).
@@ -65,9 +73,10 @@ The embed renderers live deep under the assistant-ui message tree with no access
 | field | required | meaning |
 |---|---|---|
 | `lotus` | yes | protocol version, must be `1` |
-| `type` | yes | `"submit"` (user turn) or `"notify"` (toast only, no turn) |
+| `type` | yes | `"submit"` (user turn), `"notify"` (toast only), or `"resize"` (fit frame to content) |
 | `text` | for submit | the user-turn text, ≤16 KB |
 | `title` | optional | short label for the toast/confirmation |
+| `height` | for resize | finite document height in CSS pixels; host clamps to 160–8192 |
 
 Host → applet: after a successful submit the host posts back `{lotus: 1, type: "ack", ok: true}` to the iframe so the applet can show "sent".
 

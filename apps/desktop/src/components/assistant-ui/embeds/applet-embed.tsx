@@ -1,6 +1,6 @@
 'use client'
 
-import { type CSSProperties, type ReactNode, useContext, useEffect, useMemo, useRef } from 'react'
+import { type CSSProperties, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { notify } from '@/store/notifications'
 
@@ -8,6 +8,8 @@ import { AppletBridgeContext } from './applet-bridge-context'
 import type { RichFenceProps } from './types'
 
 const DEFAULT_HEIGHT = 420
+const MIN_AUTO_HEIGHT = 160
+const MAX_AUTO_HEIGHT = 8_192
 const MAX_HTML_BYTES = 256 * 1024
 const MAX_SUBMIT_TEXT_LENGTH = 16 * 1024
 const MOUNT_GUARD_MS = 500
@@ -20,6 +22,7 @@ interface AppletDescriptor {
   height: number
   html?: string
   mode: 'html' | 'url'
+  origin?: string
   url?: string
 }
 
@@ -78,7 +81,7 @@ function parseApplet(code: string): ParseResult {
     return { reason: 'Applet URLs must use HTTP on localhost or 127.0.0.1.' }
   }
 
-  return { descriptor: { aspectRatio, height, mode: 'url', url: url.href } }
+  return { descriptor: { aspectRatio, height, mode: 'url', origin: url.origin, url: url.href } }
 }
 
 function AppletFallback({ fallback, reason }: { fallback: ReactNode; reason?: string }) {
@@ -99,12 +102,14 @@ export default function AppletRenderer({ code, fallback = <pre>{code}</pre>, str
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const mountedAtRef = useRef(0)
   const lastSubmitAtRef = useRef(Number.NEGATIVE_INFINITY)
+  const [frameHeight, setFrameHeight] = useState(DEFAULT_HEIGHT)
   const parsed = useMemo(() => parseApplet(code), [code])
 
   useEffect(() => {
     if ('descriptor' in parsed && !streaming) {
       mountedAtRef.current = Date.now()
       lastSubmitAtRef.current = Number.NEGATIVE_INFINITY
+      setFrameHeight(parsed.descriptor.height)
     }
   }, [parsed, streaming])
 
@@ -128,6 +133,22 @@ export default function AppletRenderer({ code, fallback = <pre>{code}</pre>, str
       }
 
       const message = data as Record<string, unknown>
+
+      if (parsed.descriptor.mode === 'url' && event.origin !== parsed.descriptor.origin) {
+        return
+      }
+
+      if (message.type === 'resize') {
+        if (
+          parsed.descriptor.aspectRatio === undefined &&
+          typeof message.height === 'number' &&
+          Number.isFinite(message.height)
+        ) {
+          setFrameHeight(Math.min(MAX_AUTO_HEIGHT, Math.max(MIN_AUTO_HEIGHT, Math.ceil(message.height))))
+        }
+
+        return
+      }
 
       if (message.type === 'notify') {
         const title = typeof message.title === 'string' ? message.title.trim() : ''
@@ -169,7 +190,7 @@ export default function AppletRenderer({ code, fallback = <pre>{code}</pre>, str
 
   const style: CSSProperties = descriptor.aspectRatio
     ? { aspectRatio: descriptor.aspectRatio }
-    : { height: descriptor.height }
+    : { height: frameHeight }
 
   return (
     <div className="my-2 overflow-hidden rounded-xl border border-border bg-background">
