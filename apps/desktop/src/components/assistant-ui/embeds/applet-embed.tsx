@@ -172,7 +172,7 @@ export default function AppletRenderer({ code, fallback = <pre>{code}</pre>, str
     : { height: descriptor.height }
 
   return (
-    <div>
+    <div className="my-2 overflow-hidden rounded-xl border border-border bg-background">
       <iframe
         className="block w-full border-0 bg-transparent"
         ref={iframeRef}
