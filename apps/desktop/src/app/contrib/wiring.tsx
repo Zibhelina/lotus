@@ -14,6 +14,7 @@ import { type CSSProperties, lazy, type ReactNode, Suspense, useCallback, useEff
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { formatRefValue } from '@/components/assistant-ui/directive-text'
+import { AppletBridgeContext } from '@/components/assistant-ui/embeds/applet-bridge-context'
 import { BootFailureOverlay } from '@/components/boot-failure-overlay'
 import { DesktopInstallOverlay } from '@/components/desktop-install-overlay'
 import { FindBar } from '@/components/find-bar'
@@ -861,6 +862,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   }
 
   const actions = actionsRef.current
+  const appletBridge = useMemo(() => ({ submitText: (text: string) => void actions.onSubmit(text) }), [actions])
 
   // Each pane node is memoized on ONLY the reactive inputs it truly consumes;
   // everything else reaches its surface through `actions` (stable) or the
@@ -889,8 +891,12 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // The voice cap changes only on config load; the gateway instance + all
   // chat reactivity are subscribed inside ChatRoutesSurface / ChatView.
   const chatRoutesNode = useMemo(
-    () => <ChatRoutesSurface actions={actions} maxVoiceRecordingSeconds={voiceMaxRecordingSeconds} />,
-    [actions, voiceMaxRecordingSeconds]
+    () => (
+      <AppletBridgeContext.Provider value={appletBridge}>
+        <ChatRoutesSurface actions={actions} maxVoiceRecordingSeconds={voiceMaxRecordingSeconds} />
+      </AppletBridgeContext.Provider>
+    ),
+    [actions, appletBridge, voiceMaxRecordingSeconds]
   )
 
   const api = useMemo<WiringApi>(
