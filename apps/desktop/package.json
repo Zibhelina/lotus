@@ -1,6 +1,6 @@
 {
   "name": "hermes",
-  "productName": "Hermes",
+  "productName": "Lilypad",
   "private": true,
   "version": "0.17.0",
   "description": "Native desktop shell for Hermes Agent.",
@@ -12,9 +12,9 @@
   },
   "scripts": {
     "clean": "npm run clean:e2e && npm run clean:renderer && npm run clean:electron",
-    "clean:e2e":"tsc --build tsconfig.e2e.json --clean",
-    "clean:renderer":"tsc --build tsconfig.json --clean ",
-    "clean:electron":"tsc --build tsconfig.electron.json --clean",
+    "clean:e2e": "tsc --build tsconfig.e2e.json --clean",
+    "clean:renderer": "tsc --build tsconfig.json --clean ",
+    "clean:electron": "tsc --build tsconfig.electron.json --clean",
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
     "dev:fake-boot": "cross-env HERMES_DESKTOP_BOOT_FAKE=1 HERMES_DESKTOP_BOOT_FAKE_STEP_MS=650 npm run dev",
     "dev:mock": "node scripts/dev-mock.mjs",
@@ -170,18 +170,18 @@
   },
   "build": {
     "electronVersion": "40.10.2",
-    "appId": "com.nousresearch.hermes",
-    "productName": "Hermes",
-    "executableName": "Hermes",
+    "appId": "com.zibhelina.lilypad",
+    "productName": "Lilypad",
+    "executableName": "Lilypad",
     "protocols": [
       {
-        "name": "Hermes Protocol",
+        "name": "Lilypad Protocol",
         "schemes": [
-          "hermes"
+          "lilypad"
         ]
       }
     ],
-    "artifactName": "Hermes-${version}-${os}-${arch}.${ext}",
+    "artifactName": "Lilypad-${version}-${os}-${arch}.${ext}",
     "icon": "assets/icon",
     "directories": {
       "output": "release"
@@ -217,11 +217,11 @@
       "entitlements": "electron/entitlements.mac.plist",
       "entitlementsInherit": "electron/entitlements.mac.inherit.plist",
       "extendInfo": {
-        "CFBundleDisplayName": "Hermes",
-        "CFBundleExecutable": "Hermes",
-        "CFBundleName": "Hermes",
-        "NSAudioCaptureUsageDescription": "Hermes uses audio capture for voice conversations.",
-        "NSMicrophoneUsageDescription": "Hermes uses the microphone for voice input and voice conversations."
+        "CFBundleDisplayName": "Lilypad",
+        "CFBundleExecutable": "Lilypad",
+        "CFBundleName": "Lilypad",
+        "NSAudioCaptureUsageDescription": "Lilypad uses audio capture for voice conversations.",
+        "NSMicrophoneUsageDescription": "Lilypad uses the microphone for voice input and voice conversations."
       },
       "gatekeeperAssess": false,
       "hardenedRuntime": true,
@@ -231,7 +231,7 @@
       ]
     },
     "dmg": {
-      "title": "Install Hermes",
+      "title": "Install Lilypad",
       "backgroundColor": "#f5f5f7",
       "iconSize": 96,
       "window": {
