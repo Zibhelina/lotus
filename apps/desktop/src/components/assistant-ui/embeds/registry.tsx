@@ -8,8 +8,13 @@ import type { RichFenceProps } from './types'
 // Root renderer for fenced code blocks: a language → lazy-renderer table. Each
 // renderer is its own split chunk (mermaid pulls in the mermaid lib, svg pulls
 // in DOMPurify), loaded only when a block of that language actually appears.
+// Widget is the canonical Lotus surface. `applet` remains as a compatibility
+// alias so old transcripts keep rendering after the terminology change.
+const widgetRenderer = lazy(() => import('./widget-embed'))
+
 const LAZY_FENCE: Record<string, LazyExoticComponent<ComponentType<RichFenceProps>>> = {
-  applet: lazy(() => import('./applet-embed')),
+  widget: widgetRenderer,
+  applet: widgetRenderer,
   mermaid: lazy(() => import('./mermaid-embed')),
   svg: lazy(() => import('./svg-embed'))
 }

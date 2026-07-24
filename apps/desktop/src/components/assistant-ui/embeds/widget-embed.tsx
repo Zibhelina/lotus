@@ -4,7 +4,7 @@ import { type CSSProperties, type ReactNode, useContext, useEffect, useMemo, use
 
 import { notify } from '@/store/notifications'
 
-import { AppletBridgeContext } from './applet-bridge-context'
+import { WidgetBridgeContext } from './widget-bridge-context'
 import type { RichFenceProps } from './types'
 
 const DEFAULT_HEIGHT = 420
@@ -17,7 +17,7 @@ const SUBMIT_DEBOUNCE_MS = 2_000
 const HTML_SANDBOX = 'allow-scripts allow-forms'
 const URL_SANDBOX = `${HTML_SANDBOX} allow-same-origin`
 
-interface AppletDescriptor {
+interface WidgetDescriptor {
   aspectRatio?: number
   height: number
   html?: string
@@ -26,13 +26,13 @@ interface AppletDescriptor {
   url?: string
 }
 
-type ParseResult = { descriptor: AppletDescriptor } | { reason?: string }
+type ParseResult = { descriptor: WidgetDescriptor } | { reason?: string }
 
-interface AppletRendererProps extends RichFenceProps {
+interface WidgetRendererProps extends RichFenceProps {
   fallback?: ReactNode
 }
 
-function parseApplet(code: string): ParseResult {
+function parseWidget(code: string): ParseResult {
   let input: unknown
 
   try {
@@ -74,17 +74,17 @@ function parseApplet(code: string): ParseResult {
   try {
     url = new URL(value.url)
   } catch {
-    return { reason: 'Applet URLs must use HTTP on localhost or 127.0.0.1.' }
+    return { reason: 'Widget URLs must use HTTP on localhost or 127.0.0.1.' }
   }
 
   if (url.protocol !== 'http:' || (url.hostname !== 'localhost' && url.hostname !== '127.0.0.1')) {
-    return { reason: 'Applet URLs must use HTTP on localhost or 127.0.0.1.' }
+    return { reason: 'Widget URLs must use HTTP on localhost or 127.0.0.1.' }
   }
 
   return { descriptor: { aspectRatio, height, mode: 'url', origin: url.origin, url: url.href } }
 }
 
-function AppletFallback({ fallback, reason }: { fallback: ReactNode; reason?: string }) {
+function WidgetFallback({ fallback, reason }: { fallback: ReactNode; reason?: string }) {
   if (!reason) {
     return <>{fallback}</>
   }
@@ -97,13 +97,13 @@ function AppletFallback({ fallback, reason }: { fallback: ReactNode; reason?: st
   )
 }
 
-export default function AppletRenderer({ code, fallback = <pre>{code}</pre>, streaming }: AppletRendererProps) {
-  const bridge = useContext(AppletBridgeContext)
+export default function WidgetRenderer({ code, fallback = <pre>{code}</pre>, streaming }: WidgetRendererProps) {
+  const bridge = useContext(WidgetBridgeContext)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const mountedAtRef = useRef(0)
   const lastSubmitAtRef = useRef(Number.NEGATIVE_INFINITY)
   const [frameHeight, setFrameHeight] = useState(DEFAULT_HEIGHT)
-  const parsed = useMemo(() => parseApplet(code), [code])
+  const parsed = useMemo(() => parseWidget(code), [code])
 
   useEffect(() => {
     if ('descriptor' in parsed && !streaming) {
@@ -153,7 +153,7 @@ export default function AppletRenderer({ code, fallback = <pre>{code}</pre>, str
       if (message.type === 'notify') {
         const title = typeof message.title === 'string' ? message.title.trim() : ''
 
-        notify({ message: title || 'Applet notification' })
+        notify({ message: title || 'Widget notification' })
 
         return
       }
@@ -183,7 +183,7 @@ export default function AppletRenderer({ code, fallback = <pre>{code}</pre>, str
   }, [bridge, parsed, streaming])
 
   if (streaming || !('descriptor' in parsed)) {
-    return <AppletFallback fallback={fallback} reason={'reason' in parsed ? parsed.reason : undefined} />
+    return <WidgetFallback fallback={fallback} reason={'reason' in parsed ? parsed.reason : undefined} />
   }
 
   const { descriptor } = parsed
@@ -201,7 +201,7 @@ export default function AppletRenderer({ code, fallback = <pre>{code}</pre>, str
         src={descriptor.mode === 'url' ? descriptor.url : undefined}
         srcDoc={descriptor.mode === 'html' ? descriptor.html : undefined}
         style={style}
-        title="Lotus applet"
+        title="Lotus widget"
       />
       {!bridge && <p className="mt-1 text-xs text-muted-foreground">Submit-back is unavailable in this view.</p>}
     </div>
