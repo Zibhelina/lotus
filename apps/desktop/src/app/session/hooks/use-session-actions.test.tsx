@@ -83,7 +83,7 @@ function storedSession(overrides: Partial<SessionInfo> = {}): SessionInfo {
     model: null,
     output_tokens: 0,
     preview: null,
-    source: 'desktop',
+    source: 'lotus',
     started_at: 1,
     title: 'stored',
     tool_call_count: 0,
@@ -477,7 +477,7 @@ describe('createBackendSessionForSend profile routing', () => {
   it('tags new desktop chats as desktop sessions', async () => {
     const params = await createWith(() => {})
 
-    expect(params).toMatchObject({ source: 'desktop' })
+    expect(params).toMatchObject({ source: 'lotus' })
   })
 
   it('passes the current workspace cwd into session.create', async () => {
@@ -889,7 +889,7 @@ describe('resumeSession failure recovery', () => {
 
     expect(resumeParams).not.toHaveProperty('lazy')
     expect(resumeParams).not.toHaveProperty('eager_build')
-    expect(resumeParams).toMatchObject({ source: 'desktop' })
+    expect(resumeParams).toMatchObject({ source: 'lotus' })
   })
 
   it('arms the failure latch when resume succeeds with an empty transcript for a non-empty stored session', async () => {
@@ -1086,7 +1086,7 @@ describe('branchStoredSession desktop source tagging', () => {
 
     expect(createParams).toMatchObject({
       parent_session_id: 'stored-parent',
-      source: 'desktop'
+      source: 'lotus'
     })
   })
 

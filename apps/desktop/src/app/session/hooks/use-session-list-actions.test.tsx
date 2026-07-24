@@ -32,7 +32,7 @@ const row = (id: string, over: Partial<SessionInfo> = {}): SessionInfo =>
     output_tokens: 0,
     preview: 'hey',
     profile: 'default',
-    source: 'desktop',
+    source: 'lotus',
     started_at: 900,
     title: `Chat ${id}`,
     ...over
