@@ -122,7 +122,7 @@ export default function AppletRenderer({ code, fallback = <pre>{code}</pre>, str
         event.source !== iframeWindow ||
         !data ||
         typeof data !== 'object' ||
-        (data as Record<string, unknown>).lilypad !== 1
+        (data as Record<string, unknown>).lotus !== 1
       ) {
         return
       }
@@ -153,7 +153,7 @@ export default function AppletRenderer({ code, fallback = <pre>{code}</pre>, str
 
       lastSubmitAtRef.current = now
       bridge.submitText(message.text)
-      iframeWindow.postMessage({ lilypad: 1, ok: true, type: 'ack' }, '*')
+      iframeWindow.postMessage({ lotus: 1, ok: true, type: 'ack' }, '*')
     }
 
     window.addEventListener('message', onMessage)
@@ -180,7 +180,7 @@ export default function AppletRenderer({ code, fallback = <pre>{code}</pre>, str
         src={descriptor.mode === 'url' ? descriptor.url : undefined}
         srcDoc={descriptor.mode === 'html' ? descriptor.html : undefined}
         style={style}
-        title="Lilypad applet"
+        title="Lotus applet"
       />
       {!bridge && <p className="mt-1 text-xs text-muted-foreground">Submit-back is unavailable in this view.</p>}
     </div>

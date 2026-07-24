@@ -33,7 +33,7 @@ describe('AppletRenderer', () => {
     renderApplet('{not json')
 
     expect(screen.getByTestId('fallback')).not.toBeNull()
-    expect(screen.queryByTitle('Lilypad applet')).toBeNull()
+    expect(screen.queryByTitle('Lotus applet')).toBeNull()
   })
 
   it('renders the fallback with a visible reason for a non-local URL', () => {
@@ -41,13 +41,13 @@ describe('AppletRenderer', () => {
 
     expect(screen.getByTestId('fallback')).not.toBeNull()
     expect(screen.getByText(/localhost/i)).not.toBeNull()
-    expect(screen.queryByTitle('Lilypad applet')).toBeNull()
+    expect(screen.queryByTitle('Lotus applet')).toBeNull()
   })
 
   it('renders inline HTML without same-origin sandbox access', () => {
     renderApplet(JSON.stringify({ height: 360, html: '<!doctype html><button>Submit</button>' }))
 
-    const iframe = screen.getByTitle('Lilypad applet')
+    const iframe = screen.getByTitle('Lotus applet')
 
     expect(iframe.getAttribute('sandbox')).toBe('allow-scripts allow-forms')
     expect(iframe.getAttribute('sandbox')).not.toContain('allow-same-origin')
@@ -60,30 +60,30 @@ describe('AppletRenderer', () => {
 
     renderApplet(JSON.stringify({ html: '<!doctype html><button>Submit</button>' }), submitText)
 
-    const iframe = screen.getByTitle('Lilypad applet') as HTMLIFrameElement
+    const iframe = screen.getByTitle('Lotus applet') as HTMLIFrameElement
     const postMessage = vi.spyOn(iframe.contentWindow!, 'postMessage')
 
     act(() => vi.advanceTimersByTime(500))
 
-    sendAppletMessage(iframe, { lilypad: 1, text: 'wrong source', type: 'submit' }, window)
-    sendAppletMessage(iframe, { lilypad: 2, text: 'wrong version', type: 'submit' })
-    sendAppletMessage(iframe, { lilypad: 1, text: 'accepted', type: 'submit' })
-    sendAppletMessage(iframe, { lilypad: 1, text: 'too soon', type: 'submit' })
+    sendAppletMessage(iframe, { lotus: 1, text: 'wrong source', type: 'submit' }, window)
+    sendAppletMessage(iframe, { lotus: 2, text: 'wrong version', type: 'submit' })
+    sendAppletMessage(iframe, { lotus: 1, text: 'accepted', type: 'submit' })
+    sendAppletMessage(iframe, { lotus: 1, text: 'too soon', type: 'submit' })
 
     expect(submitText).toHaveBeenCalledTimes(1)
     expect(submitText).toHaveBeenCalledWith('accepted')
     expect(postMessage).toHaveBeenCalledTimes(1)
-    expect(postMessage).toHaveBeenCalledWith({ lilypad: 1, ok: true, type: 'ack' }, '*')
+    expect(postMessage).toHaveBeenCalledWith({ lotus: 1, ok: true, type: 'ack' }, '*')
   })
 
   it('ignores submits received before the mount guard elapses', () => {
     const submitText = vi.fn()
 
     renderApplet(JSON.stringify({ html: '<!doctype html><button>Submit</button>' }), submitText)
-    const iframe = screen.getByTitle('Lilypad applet') as HTMLIFrameElement
+    const iframe = screen.getByTitle('Lotus applet') as HTMLIFrameElement
 
     act(() => vi.advanceTimersByTime(499))
-    sendAppletMessage(iframe, { lilypad: 1, text: 'auto-fired', type: 'submit' })
+    sendAppletMessage(iframe, { lotus: 1, text: 'auto-fired', type: 'submit' })
 
     expect(submitText).not.toHaveBeenCalled()
   })
@@ -91,13 +91,13 @@ describe('AppletRenderer', () => {
   it('renders a bridge-unavailable hint and drops submits without a provider', () => {
     renderApplet(JSON.stringify({ html: '<!doctype html><button>Submit</button>' }))
 
-    const iframe = screen.getByTitle('Lilypad applet') as HTMLIFrameElement
+    const iframe = screen.getByTitle('Lotus applet') as HTMLIFrameElement
     const postMessage = vi.spyOn(iframe.contentWindow!, 'postMessage')
 
     expect(screen.getByText(/submit-back is unavailable/i)).not.toBeNull()
 
     act(() => vi.advanceTimersByTime(500))
-    sendAppletMessage(iframe, { lilypad: 1, text: 'dropped', type: 'submit' })
+    sendAppletMessage(iframe, { lotus: 1, text: 'dropped', type: 'submit' })
 
     expect(postMessage).not.toHaveBeenCalled()
   })
@@ -106,11 +106,11 @@ describe('AppletRenderer', () => {
     const submitText = vi.fn()
 
     renderApplet(JSON.stringify({ html: '<!doctype html><button>Submit</button>' }), submitText)
-    const iframe = screen.getByTitle('Lilypad applet') as HTMLIFrameElement
+    const iframe = screen.getByTitle('Lotus applet') as HTMLIFrameElement
     const postMessage = vi.spyOn(iframe.contentWindow!, 'postMessage')
 
     act(() => vi.advanceTimersByTime(500))
-    sendAppletMessage(iframe, { lilypad: 1, text: 'x'.repeat(16_385), type: 'submit' })
+    sendAppletMessage(iframe, { lotus: 1, text: 'x'.repeat(16_385), type: 'submit' })
 
     expect(submitText).not.toHaveBeenCalled()
     expect(postMessage).not.toHaveBeenCalled()
@@ -120,20 +120,20 @@ describe('AppletRenderer', () => {
     renderApplet(JSON.stringify({ html: 'x'.repeat(256 * 1024 + 1) }))
 
     expect(screen.getByTestId('fallback')).not.toBeNull()
-    expect(screen.queryByTitle('Lilypad applet')).toBeNull()
+    expect(screen.queryByTitle('Lotus applet')).toBeNull()
   })
 
   it('renders the fallback while streaming', () => {
     render(<AppletRenderer code={JSON.stringify({ html: '<p>partial</p>' })} fallback={fallback} streaming />)
 
     expect(screen.getByTestId('fallback')).not.toBeNull()
-    expect(screen.queryByTitle('Lilypad applet')).toBeNull()
+    expect(screen.queryByTitle('Lotus applet')).toBeNull()
   })
 
   it('uses aspect ratio instead of fixed height when provided', () => {
     renderApplet(JSON.stringify({ aspectRatio: 16 / 9, height: 900, html: '<p>ratio</p>' }))
 
-    expect(Number.parseFloat((screen.getByTitle('Lilypad applet') as HTMLIFrameElement).style.aspectRatio)).toBeCloseTo(
+    expect(Number.parseFloat((screen.getByTitle('Lotus applet') as HTMLIFrameElement).style.aspectRatio)).toBeCloseTo(
       16 / 9
     )
   })
@@ -141,7 +141,7 @@ describe('AppletRenderer', () => {
   it('allows URL mode only for HTTP localhost and grants same-origin in its sandbox', () => {
     renderApplet(JSON.stringify({ url: 'http://localhost:2600/applets/test' }))
 
-    const iframe = screen.getByTitle('Lilypad applet')
+    const iframe = screen.getByTitle('Lotus applet')
 
     expect(iframe.getAttribute('src')).toBe('http://localhost:2600/applets/test')
     expect(iframe.getAttribute('sandbox')).toBe('allow-scripts allow-forms allow-same-origin')

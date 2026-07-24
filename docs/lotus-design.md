@@ -1,8 +1,8 @@
-# Lilypad — fork design
+# Lotus — fork design
 
-Lilypad is a personal fork of Hermes Desktop. Not an etude-specific fork: a general place to modify the desktop app freely. Its first feature is **in-chat applets with a submit-back bridge**, which etude (and anything else) can use.
+Lotus is a personal fork of Hermes Desktop. Not an etude-specific fork: a general place to modify the desktop app freely. Its first feature is **in-chat applets with a submit-back bridge**, which etude (and anything else) can use.
 
-Branch model: `lilypad-main` carries fork commits on top of upstream `main`. Remotes: `hermes-local` (the local hermes-agent checkout, for fast rebases), `upstream` (GitHub). Rebase fork commits onto fresh upstream periodically; keep the fork surface SMALL and edge-shaped so rebases stay cheap.
+Branch model: `lotus-main` carries fork commits on top of upstream `main`. Remotes: `hermes-local` (the local hermes-agent checkout, for fast rebases), `upstream` (GitHub). Rebase fork commits onto fresh upstream periodically; keep the fork surface SMALL and edge-shaped so rebases stay cheap.
 
 ## Feature 1: chat applets + session submit bridge
 
@@ -28,7 +28,7 @@ Branch model: `lilypad-main` carries fork commits on top of upstream `main`. Rem
 
    ```js
    window.parent.postMessage({
-     lilypad: 1,                       // protocol version
+     lotus: 1,                       // protocol version
      type: "submit",                   // "submit" = create a user turn
      text: "Etude applet submitted GER-01 (inbox ref 3). Grade it."
    }, "*")
@@ -40,7 +40,7 @@ Branch model: `lilypad-main` carries fork commits on top of upstream `main`. Rem
 
 - **Edge, not waist.** The renderer is a lazy chunk in the existing `RichCodeBlock` fence registry (`registry.tsx`), exactly like `mermaid`/`svg`. No new global store, no new core surface.
 - **Renderer owns presentation; backend owns sessions.** The bridge does NOT call gateway RPC directly. It hands text to the already-wired composer submit callback (`usePromptActions`), which owns session targeting, resume, queue, and optimistic paint.
-- **Security:** iframe `sandbox="allow-scripts allow-forms"` (NO `allow-same-origin` for inline HTML; url mode may include it only for http(s) localhost URLs). Bridge accepts only messages whose `event.source` is that iframe's `contentWindow`, with `lilypad: 1`, a known `type`, and `text` length-capped (16 KB). One submit per applet per 2s (debounce); ignore everything else.
+- **Security:** iframe `sandbox="allow-scripts allow-forms"` (NO `allow-same-origin` for inline HTML; url mode may include it only for http(s) localhost URLs). Bridge accepts only messages whose `event.source` is that iframe's `contentWindow`, with `lotus: 1`, a known `type`, and `text` length-capped (16 KB). One submit per applet per 2s (debounce); ignore everything else.
 - **No auto-fire:** a `submit` requires a user gesture inside the applet (the applet's own button); the host additionally ignores submits arriving <500ms after mount.
 - **Streaming-safe:** fence content arrives progressively; render the applet only when the fence is complete (the registry's `streaming` prop is false), showing the plain code block meanwhile — same behavior as mermaid.
 - **Fallback:** invalid JSON, missing url/html, or oversized html (256 KB cap) → render the normal syntax-highlighted block (the `fallback` prop).
@@ -53,23 +53,23 @@ apps/desktop/src/components/assistant-ui/embeds/applet-embed.test.tsx  # NEW
 apps/desktop/src/components/assistant-ui/embeds/registry.tsx       # +1 line: applet entry
 <one small wiring point>  # expose the composer submit callback to the embed layer
                           # via a narrow context/store — see Wiring below
-LILYPAD.md                                                         # fork README (root)
+LOTUS.md                                                         # fork README (root)
 ```
 
 ### Wiring the submit callback
 
 The embed renderers live deep under the assistant-ui message tree with no access to `usePromptActions`. Add ONE narrow seam: a React context (`AppletBridgeContext`) that carries `{ submitText(text: string): void; sessionKey: string }`, provided at the chat-view level where `usePromptActions` is already in scope, consumed by `applet-embed.tsx`. When no provider is present (e.g. renderer used outside a live chat), the applet still renders but submits are disabled with a visible hint — degrade, don't crash.
 
-### Protocol v1 (documented in LILYPAD.md)
+### Protocol v1 (documented in LOTUS.md)
 
 | field | required | meaning |
 |---|---|---|
-| `lilypad` | yes | protocol version, must be `1` |
+| `lotus` | yes | protocol version, must be `1` |
 | `type` | yes | `"submit"` (user turn) or `"notify"` (toast only, no turn) |
 | `text` | for submit | the user-turn text, ≤16 KB |
 | `title` | optional | short label for the toast/confirmation |
 
-Host → applet: after a successful submit the host posts back `{lilypad: 1, type: "ack", ok: true}` to the iframe so the applet can show "sent".
+Host → applet: after a successful submit the host posts back `{lotus: 1, type: "ack", ok: true}` to the iframe so the applet can show "sent".
 
 ## Verification
 
