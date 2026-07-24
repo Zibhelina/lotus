@@ -193,7 +193,7 @@ export default function WidgetRenderer({ code, fallback = <pre>{code}</pre>, str
     : { height: frameHeight }
 
   return (
-    <div className="my-2 overflow-hidden rounded-xl border border-border bg-background">
+    <div className="my-2">
       <iframe
         className="block w-full border-0 bg-transparent"
         ref={iframeRef}
