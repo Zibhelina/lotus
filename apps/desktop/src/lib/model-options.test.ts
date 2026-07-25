@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { getGlobalModelOptions } from '@/hermes'
 
-import { manualPickRemoved, modelOptionsQueryKey, requestModelOptions } from './model-options'
+import {
+  manualPickRemoved,
+  modelOptionsQueryKey,
+  requestModelOptions,
+  withLotusOpenRouterModels
+} from './model-options'
 
 const globalOptions = { model: 'hermes-4', provider: 'nous', providers: [] }
 
@@ -42,10 +47,82 @@ describe('requestModelOptions', () => {
     })
   })
 
+  it('adds the Lotus OpenRouter model to the live gateway catalog', async () => {
+    const gateway = {
+      request: vi.fn(() =>
+        Promise.resolve({
+          providers: [
+            {
+              models: ['google/gemini-3.5-flash'],
+              name: 'OpenRouter',
+              slug: 'openrouter'
+            }
+          ]
+        })
+      )
+    }
+
+    const result = await requestModelOptions({ gateway: gateway as never })
+
+    expect(result.providers?.[0].models).toEqual([
+      'google/gemini-3.5-flash',
+      'google/gemini-3.5-flash-lite'
+    ])
+  })
+
   it('falls back to REST when no gateway is connected', async () => {
     await requestModelOptions({ refresh: true })
 
     expect(getGlobalModelOptions).toHaveBeenCalledWith({ explicitOnly: true, refresh: true })
+  })
+})
+
+describe('withLotusOpenRouterModels', () => {
+  it('offers Gemini 3.5 Flash Lite beside Gemini 3.5 Flash', () => {
+    const response = {
+      providers: [
+        {
+          models: ['google/gemini-3.5-flash', 'x-ai/grok-4.5'],
+          name: 'OpenRouter',
+          slug: 'openrouter',
+          total_models: 2
+        }
+      ]
+    }
+
+    const result = withLotusOpenRouterModels(response)
+    const openrouter = result.providers?.[0]
+
+    expect(openrouter?.models).toEqual([
+      'google/gemini-3.5-flash',
+      'google/gemini-3.5-flash-lite',
+      'x-ai/grok-4.5'
+    ])
+    expect(openrouter?.total_models).toBe(3)
+    expect(response.providers[0].models).toEqual(['google/gemini-3.5-flash', 'x-ai/grok-4.5'])
+  })
+
+  it('does not duplicate the model once the backend catalog includes it', () => {
+    const response = {
+      providers: [
+        {
+          models: ['google/gemini-3.5-flash-lite'],
+          name: 'OpenRouter',
+          slug: 'openrouter',
+          total_models: 1
+        }
+      ]
+    }
+
+    expect(withLotusOpenRouterModels(response)).toBe(response)
+    expect(response.providers[0].models).toEqual(['google/gemini-3.5-flash-lite'])
+    expect(response.providers[0].total_models).toBe(1)
+  })
+
+  it('does not invent an OpenRouter provider when it is not configured', () => {
+    const response = { providers: [{ models: ['hermes-4'], name: 'Nous', slug: 'nous' }] }
+
+    expect(withLotusOpenRouterModels(response)).toBe(response)
   })
 })
 

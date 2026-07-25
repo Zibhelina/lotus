@@ -1,6 +1,46 @@
 import { getGlobalModelOptions, type HermesGateway, type ModelOptionsResponse } from '@/hermes'
 import type { ModelOptionProvider } from '@/types/hermes'
 
+const LOTUS_OPENROUTER_MODEL = 'google/gemini-3.5-flash-lite'
+
+/** Add Lotus-curated OpenRouter models that the connected Hermes runtime may
+ * not have learned about yet. The override stays at the desktop edge so Lotus
+ * can offer a newly released model without mutating backend-owned config. */
+export function withLotusOpenRouterModels(response: ModelOptionsResponse): ModelOptionsResponse {
+  const providers = response.providers
+
+  if (!providers?.length) {
+    return response
+  }
+
+  let changed = false
+
+  const nextProviders = providers.map(provider => {
+    if (provider.slug !== 'openrouter') {
+      return provider
+    }
+
+    const current = provider.models ?? []
+
+    if (current.includes(LOTUS_OPENROUTER_MODEL)) {
+      return provider
+    }
+
+    changed = true
+    const models = [...current]
+    const anchor = models.indexOf('google/gemini-3.5-flash')
+    models.splice(anchor >= 0 ? anchor + 1 : models.length, 0, LOTUS_OPENROUTER_MODEL)
+
+    return {
+      ...provider,
+      models,
+      ...(provider.total_models === undefined ? {} : { total_models: provider.total_models + 1 })
+    }
+  })
+
+  return changed ? { ...response, providers: nextProviders } : response
+}
+
 /**
  * True only when a persisted **manual** composer pick has been removed from the
  * catalog (its provider still ships models, but no longer this one) — so a new
@@ -71,8 +111,10 @@ export function requestModelOptions({
       params.explicit_only = true
     }
 
-    return gateway.request<ModelOptionsResponse>('model.options', params)
+    return gateway
+      .request<ModelOptionsResponse>('model.options', params)
+      .then(withLotusOpenRouterModels)
   }
 
-  return getGlobalModelOptions({ explicitOnly, ...(refresh ? { refresh: true } : {}) })
+  return getGlobalModelOptions({ explicitOnly, ...(refresh ? { refresh: true } : {}) }).then(withLotusOpenRouterModels)
 }
