@@ -4,6 +4,7 @@ import {
   useAuiState,
   useMessagePartReasoning
 } from '@assistant-ui/react'
+import { useStore } from '@nanostores/react'
 import { type ComponentProps, type FC, type ReactNode, useEffect, useRef, useState } from 'react'
 
 import { ClarifyTool } from '@/components/assistant-ui/clarify-tool'
@@ -17,6 +18,7 @@ import { useI18n } from '@/i18n'
 import { generatedImageFromResult } from '@/lib/generated-images'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { cn } from '@/lib/utils'
+import { $showThinking } from '@/store/show-thinking'
 
 const ImageGenerateTool: FC<ToolCallMessagePartProps> = props => {
   const { args, result } = props
@@ -154,6 +156,9 @@ const ReasoningAccordionGroup: FC<{ children?: ReactNode; endIndex: number; star
 }) => {
   const messageId = useAuiState(s => s.message.id)
   const messageRunning = useAuiState(s => s.message.status?.type === 'running')
+  // Settings → Appearance can hide reasoning entirely. The model still reasons;
+  // only the disclosure is dropped, so nothing about the request changes.
+  const showThinking = useStore($showThinking)
 
   const pending = useAuiState(
     s =>
@@ -176,7 +181,7 @@ const ReasoningAccordionGroup: FC<{ children?: ReactNode; endIndex: number; star
       .some(p => p?.type === 'reasoning' && typeof p.text === 'string' && p.text.trim().length > 0)
   )
 
-  if (!hasContent) {
+  if (!hasContent || !showThinking) {
     return null
   }
 
