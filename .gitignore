@@ -185,3 +185,6 @@ infographics/
 infograficos/
 infografico/
 native/fts5_cjk/*.so
+
+# Local agent context (not for the public repo)
+CLAUDE.md
