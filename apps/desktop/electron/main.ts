@@ -5489,10 +5489,24 @@ function isAudioCapturePermission(permission, details) {
   return mediaTypes.includes('audio') && !mediaTypes.includes('video')
 }
 
+// Web MIDI reaches a widget only if BOTH gates open: the iframe must delegate
+// the feature via allow="midi" (see widget-embed.tsx) AND Electron must grant
+// the permission here. Without this the widget sees a rejected
+// requestMIDIAccess even though the frame policy allowed it.
+//
+// Chromium asks for 'midiSysex' even when the page called
+// requestMIDIAccess({sysex: false}) — it does not raise a plain 'midi' request
+// on this path, so matching only 'midi' denies ordinary note input. Both names
+// are therefore accepted; the widget still requests sysex:false, so no sysex
+// capability is actually handed to it.
+function isMidiPermission(permission) {
+  return permission === 'midi' || permission === 'midiSysex'
+}
+
 function installMediaPermissions() {
   // Async request handler: the prompt-style path (most platforms).
   session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback, details) => {
-    callback(isAudioCapturePermission(permission, details))
+    callback(isAudioCapturePermission(permission, details) || isMidiPermission(permission))
   })
 
   // Synchronous check handler: Chromium consults this for getUserMedia on
@@ -5508,6 +5522,10 @@ function installMediaPermissions() {
         return false
       }
 
+      return true
+    }
+
+    if (isMidiPermission(permission)) {
       return true
     }
 

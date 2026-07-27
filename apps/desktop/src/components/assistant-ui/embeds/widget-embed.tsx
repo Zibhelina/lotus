@@ -16,6 +16,11 @@ const MOUNT_GUARD_MS = 500
 const SUBMIT_DEBOUNCE_MS = 2_000
 const HTML_SANDBOX = 'allow-scripts allow-forms'
 const URL_SANDBOX = `${HTML_SANDBOX} allow-same-origin`
+// Web MIDI is permissions-policy gated, so a widget cannot reach a MIDI
+// keyboard unless the frame delegates the feature. Only url-mode frames get it:
+// html-mode frames are sandboxed to a null origin, where the permission cannot
+// be granted to a real origin anyway.
+const URL_ALLOW = 'midi'
 
 interface WidgetDescriptor {
   aspectRatio?: number
@@ -196,6 +201,7 @@ export default function WidgetRenderer({ code, fallback = <pre>{code}</pre>, str
     <div className="my-2">
       <iframe
         className="block w-full border-0 bg-transparent"
+        allow={descriptor.mode === 'url' ? URL_ALLOW : undefined}
         ref={iframeRef}
         sandbox={descriptor.mode === 'html' ? HTML_SANDBOX : URL_SANDBOX}
         src={descriptor.mode === 'url' ? descriptor.url : undefined}

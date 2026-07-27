@@ -54,6 +54,7 @@ The host validates the envelope and routes the text through the same submit path
 
 - Inline HTML sandbox: `allow-scripts allow-forms`, without same-origin access.
 - URL mode: HTTP on `localhost` or `127.0.0.1` only; bridge messages must retain the descriptor's exact origin.
+- Web MIDI: URL widgets get `allow="midi"` on the frame, and Electron's permission handlers grant it. **Both gates must open** — the frame policy alone leaves `requestMIDIAccess` rejected, which reads as a browser bug rather than a permission denial. Inline HTML is deliberately excluded: its null origin cannot hold the permission. Note that Chromium raises this as **`midiSysex`** even for `requestMIDIAccess({sysex: false})`, so a handler matching only `'midi'` silently denies ordinary note input; both names must be accepted. The page still asks for `sysex: false`, so no sysex capability is granted.
 - Source check: `event.source` must equal the widget iframe's `contentWindow`.
 - Submit payload: at most 16 KB, ignored during the first 500 ms, and debounced to one every 2 seconds.
 - Resize payload: finite and clamped to 160–8192 px.

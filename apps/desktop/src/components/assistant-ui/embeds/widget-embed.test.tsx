@@ -199,4 +199,16 @@ describe('WidgetRenderer', () => {
     expect(iframe.getAttribute('src')).toBe('http://localhost:2600/widgets/test')
     expect(iframe.getAttribute('sandbox')).toBe('allow-scripts allow-forms allow-same-origin')
   })
+
+  it('delegates MIDI to URL-mode widgets so a keyboard can reach them', () => {
+    renderWidget(JSON.stringify({ url: 'http://localhost:2600/widgets/midi-rhythm?atom=PIA-01' }))
+
+    expect(screen.getByTitle('Lotus widget').getAttribute('allow')).toBe('midi')
+  })
+
+  it('does not delegate MIDI to null-origin inline HTML widgets', () => {
+    renderWidget(JSON.stringify({ html: '<!doctype html><button>Submit</button>' }))
+
+    expect(screen.getByTitle('Lotus widget').getAttribute('allow')).toBeNull()
+  })
 })
