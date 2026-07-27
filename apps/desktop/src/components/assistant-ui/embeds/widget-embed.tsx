@@ -158,17 +158,17 @@ export default function WidgetRenderer({ code, fallback = <pre>{code}</pre>, str
         return
       }
 
-      if (message.type !== 'submit' || typeof message.text !== 'string' || message.text.length > MAX_SUBMIT_TEXT_LENGTH) {
+      if (
+        message.type !== 'submit' ||
+        typeof message.text !== 'string' ||
+        message.text.length > MAX_SUBMIT_TEXT_LENGTH
+      ) {
         return
       }
 
       const now = Date.now()
 
-      if (
-        !bridge ||
-        now - mountedAt < MOUNT_GUARD_MS ||
-        now - lastSubmitAt < SUBMIT_DEBOUNCE_MS
-      ) {
+      if (!bridge || now - mountedAt < MOUNT_GUARD_MS || now - lastSubmitAt < SUBMIT_DEBOUNCE_MS) {
         return
       }
 

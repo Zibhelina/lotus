@@ -111,9 +111,7 @@ export function requestModelOptions({
       params.explicit_only = true
     }
 
-    return gateway
-      .request<ModelOptionsResponse>('model.options', params)
-      .then(withLotusOpenRouterModels)
+    return gateway.request<ModelOptionsResponse>('model.options', params).then(withLotusOpenRouterModels)
   }
 
   return getGlobalModelOptions({ explicitOnly, ...(refresh ? { refresh: true } : {}) }).then(withLotusOpenRouterModels)

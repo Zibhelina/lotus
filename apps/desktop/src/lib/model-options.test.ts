@@ -64,10 +64,7 @@ describe('requestModelOptions', () => {
 
     const result = await requestModelOptions({ gateway: gateway as never })
 
-    expect(result.providers?.[0].models).toEqual([
-      'google/gemini-3.5-flash',
-      'google/gemini-3.5-flash-lite'
-    ])
+    expect(result.providers?.[0].models).toEqual(['google/gemini-3.5-flash', 'google/gemini-3.5-flash-lite'])
   })
 
   it('falls back to REST when no gateway is connected', async () => {
@@ -93,11 +90,7 @@ describe('withLotusOpenRouterModels', () => {
     const result = withLotusOpenRouterModels(response)
     const openrouter = result.providers?.[0]
 
-    expect(openrouter?.models).toEqual([
-      'google/gemini-3.5-flash',
-      'google/gemini-3.5-flash-lite',
-      'x-ai/grok-4.5'
-    ])
+    expect(openrouter?.models).toEqual(['google/gemini-3.5-flash', 'google/gemini-3.5-flash-lite', 'x-ai/grok-4.5'])
     expect(openrouter?.total_models).toBe(3)
     expect(response.providers[0].models).toEqual(['google/gemini-3.5-flash', 'x-ai/grok-4.5'])
   })

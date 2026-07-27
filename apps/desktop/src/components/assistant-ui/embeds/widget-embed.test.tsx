@@ -11,7 +11,11 @@ function renderWidget(code: string, submitText?: (text: string) => void) {
   const renderer = <WidgetRenderer code={code} fallback={fallback} />
 
   return render(
-    submitText ? <WidgetBridgeContext.Provider value={{ submitText }}>{renderer}</WidgetBridgeContext.Provider> : renderer
+    submitText ? (
+      <WidgetBridgeContext.Provider value={{ submitText }}>{renderer}</WidgetBridgeContext.Provider>
+    ) : (
+      renderer
+    )
   )
 }
 
@@ -102,7 +106,12 @@ describe('WidgetRenderer', () => {
     const iframe = screen.getByTitle('Lotus widget') as HTMLIFrameElement
 
     act(() => vi.advanceTimersByTime(500))
-    sendWidgetMessage(iframe, { lotus: 1, text: 'remote page', type: 'submit' }, iframe.contentWindow, 'https://example.com')
+    sendWidgetMessage(
+      iframe,
+      { lotus: 1, text: 'remote page', type: 'submit' },
+      iframe.contentWindow,
+      'https://example.com'
+    )
     sendWidgetMessage(
       iframe,
       { lotus: 1, text: 'local widget', type: 'submit' },
