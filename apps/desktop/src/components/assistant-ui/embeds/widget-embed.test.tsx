@@ -1,9 +1,9 @@
 import { act, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { RICH_FENCE_LANGUAGES } from './registry'
 import { WidgetBridgeContext } from './widget-bridge-context'
 import WidgetRenderer from './widget-embed'
-import { RICH_FENCE_LANGUAGES } from './registry'
 
 const fallback = <div data-testid="fallback">raw widget source</div>
 

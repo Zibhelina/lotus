@@ -4,8 +4,8 @@ import { type CSSProperties, type ReactNode, useContext, useEffect, useMemo, use
 
 import { notify } from '@/store/notifications'
 
-import { WidgetBridgeContext } from './widget-bridge-context'
 import type { RichFenceProps } from './types'
+import { WidgetBridgeContext } from './widget-bridge-context'
 
 const DEFAULT_HEIGHT = 420
 const MIN_AUTO_HEIGHT = 160
@@ -105,23 +105,18 @@ function WidgetFallback({ fallback, reason }: { fallback: ReactNode; reason?: st
 export default function WidgetRenderer({ code, fallback = <pre>{code}</pre>, streaming }: WidgetRendererProps) {
   const bridge = useContext(WidgetBridgeContext)
   const iframeRef = useRef<HTMLIFrameElement>(null)
-  const mountedAtRef = useRef(0)
-  const lastSubmitAtRef = useRef(Number.NEGATIVE_INFINITY)
   const [frameHeight, setFrameHeight] = useState(DEFAULT_HEIGHT)
   const parsed = useMemo(() => parseWidget(code), [code])
-
-  useEffect(() => {
-    if ('descriptor' in parsed && !streaming) {
-      mountedAtRef.current = Date.now()
-      lastSubmitAtRef.current = Number.NEGATIVE_INFINITY
-      setFrameHeight(parsed.descriptor.height)
-    }
-  }, [parsed, streaming])
 
   useEffect(() => {
     if (!('descriptor' in parsed) || streaming) {
       return
     }
+
+    const mountedAt = Date.now()
+    let lastSubmitAt = Number.NEGATIVE_INFINITY
+
+    setFrameHeight(parsed.descriptor.height)
 
     const onMessage = (event: MessageEvent) => {
       const iframeWindow = iframeRef.current?.contentWindow
@@ -171,13 +166,13 @@ export default function WidgetRenderer({ code, fallback = <pre>{code}</pre>, str
 
       if (
         !bridge ||
-        now - mountedAtRef.current < MOUNT_GUARD_MS ||
-        now - lastSubmitAtRef.current < SUBMIT_DEBOUNCE_MS
+        now - mountedAt < MOUNT_GUARD_MS ||
+        now - lastSubmitAt < SUBMIT_DEBOUNCE_MS
       ) {
         return
       }
 
-      lastSubmitAtRef.current = now
+      lastSubmitAt = now
       bridge.submitText(message.text)
       iframeWindow.postMessage({ lotus: 1, ok: true, type: 'ack' }, '*')
     }
@@ -200,8 +195,8 @@ export default function WidgetRenderer({ code, fallback = <pre>{code}</pre>, str
   return (
     <div className="my-2">
       <iframe
-        className="block w-full border-0 bg-transparent"
         allow={descriptor.mode === 'url' ? URL_ALLOW : undefined}
+        className="block w-full border-0 bg-transparent"
         ref={iframeRef}
         sandbox={descriptor.mode === 'html' ? HTML_SANDBOX : URL_SANDBOX}
         src={descriptor.mode === 'url' ? descriptor.url : undefined}
